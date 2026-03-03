@@ -1,0 +1,49 @@
+services:
+  clickhouse:
+    build:
+      context: ./clickhouse
+    container_name: clickhouse
+    ports:
+      - "9000:9000"    # TCP port for ClickHouse native protocol
+      - "8123:8123"    # HTTP port for ClickHouse
+      - "9009:9009"
+    volumes:
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./src/timeseries_data.csv:/docker-entrypoint-initdb.d/timeseries_data.csv
+    networks:
+      clickhouse-net:
+        ipv4_address: 172.40.25.50
+
+  
+  clickhouse_data_ingest:
+    image: yandex/clickhouse-client:latest
+    container_name: clickhouse_data_ingest
+    environment:
+      - CLICKHOUSE_HOST=clickhouse  # Point to the ClickHouse service
+      - CLICKHOUSE_USER=fehemi
+      - CLICKHOUSE_PASSWORD=fehemi
+      - CLICKHOUSE_DB=shop
+    depends_on:
+      - clickhouse  # Ensure ClickHouse is up before running this container
+    entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]  # Run the script with a small delay to ensure ClickHouse is ready
+    #entrypoint: ["/bin/bash", "-c", "while true; do sleep 1000; done"]
+    volumes:
+      - ./src/timeseries_data.csv:/timeseries_data.csv
+      - ./clickhouse/data_init.sh:/data_init.sh
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--host=clickhouse", "--user=$CLICKHOUSE_USER", "--password=$CLICKHOUSE_PASSWORD", "--query=SELECT 1"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+      timeout: 5s
+    networks:
+      clickhouse-net:
+        ipv4_address: 172.40.25.60
+    
+  
+networks:
+  clickhouse-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.40.25.0/24
