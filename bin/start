@@ -1,4 +1,3 @@
 #!/bin/bash
 set -e
-
 exec docker compose --project-name clickhouse-api up --build --remove-orphans --renew-anon-volumes --force-recreate ${*}
