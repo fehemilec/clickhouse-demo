@@ -46,6 +46,7 @@ Performing sliding window calculations.
 Analyzing data based on user_id and meter_id.
 
 To open Clickhouse UI go to http://localhost:8123 and then to Clickhouse UI
+Login using the user that was created by init.sql
 
 ## Generate fake data
 To generate the fake csv data under src, we can run the python script:
