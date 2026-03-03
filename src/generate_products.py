@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 fake = Faker()
 
 # Set number of records to generate
-num_records = 1000000  # Adjust the number of records
+num_records = 10000000  # Adjust the number of records
 start_date = datetime(2020, 1, 1)  # Start date of the time series
 end_date = datetime(2023, 1, 1)  # End date of the time series
 
