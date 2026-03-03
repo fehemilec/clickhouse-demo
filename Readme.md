@@ -161,3 +161,40 @@ Scalability: ClickHouse is horizontally scalable, so it can handle increasing am
 
 Optimized for Analytical Queries: ClickHouse excels at executing complex aggregations, joins, and grouping operations, which are common in time-series data analysis.
 
+
+## Benchmarking 
+
+### Postgres
+The query
+
+SELECT 
+    date_trunc('hour', timestamp) AS hour,
+    user_id,
+    meter_id,
+    avg(value) AS avg_value,
+    max(value) AS max_value,
+    min(value) AS min_value
+FROM meterdata
+WHERE timestamp >= '2021-01-01 00:00:00' 
+  AND timestamp < '2021-12-31 23:59:59'
+GROUP BY hour, user_id, meter_id
+ORDER BY hour DESC
+LIMIT 10000;
+
+takes in postgres around 128 milliseconds whereas the same query:
+
+SELECT 
+    toStartOfHour(timestamp) AS hour,
+    user_id,
+    meter_id,
+    avg(value) AS avg_value,
+    max(value) AS max_value,
+    min(value) AS min_value
+FROM shop.meterdata
+WHERE timestamp >= '2021-01-01 00:00:00' 
+  AND timestamp < '2021-12-31 23:59:59'
+GROUP BY hour, user_id, meter_id
+ORDER BY hour DESC
+LIMIT 1000;
+
+takes in clickhouse around 40 milliseconds

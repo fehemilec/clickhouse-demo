@@ -38,6 +38,56 @@ services:
     networks:
       clickhouse-net:
         ipv4_address: 172.40.25.60
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: fehemi
+      POSTGRES_PASSWORD: fehemi
+      POSTGRES_DB: shop
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      clickhouse-net:
+        ipv4_address: 172.40.25.51
+
+  postgres_data_ingest:
+    image: postgres:latest
+    container_name: postgres_data_ingest
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=fehemi
+      - POSTGRES_PASSWORD=fehemi
+      - PGPASSWORD=fehemi
+      - POSTGRES_DB=shop
+    depends_on:
+      - postgres
+    entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]
+    volumes:
+      - ./src/timeseries_data.csv:/timeseries_data.csv
+      - ./postgres/data_init.sh:/data_init.sh
+    networks:
+      clickhouse-net:
+        ipv4_address: 172.40.25.61
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=fehemi
+      - PGADMIN_LISTEN_PORT=80
+      - PGADMIN_CONNECTIONS=postgres://fehemi:fehemi@postgres:5432/shop
+    ports:
+      - "5050:80"  # pgAdmin UI http://localhost:5050
+    depends_on:
+      - postgres
+    networks:
+      clickhouse-net:
+        ipv4_address: 172.40.25.52
     
 networks:
   clickhouse-net:
