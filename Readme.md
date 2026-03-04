@@ -175,13 +175,14 @@ SELECT
     max(value) AS max_value,
     min(value) AS min_value
 FROM meterdata
-WHERE timestamp >= '2021-01-01 00:00:00' 
+WHERE timestamp >= '2020-02-05 00:00:00' 
   AND timestamp < '2021-12-31 23:59:59'
 GROUP BY hour, user_id, meter_id
-ORDER BY hour DESC
-LIMIT 10000;
+ORDER BY hour DESC;
 
 takes in postgres around 128 milliseconds whereas the same query:
+
+# Clickhouse
 
 SELECT 
     toStartOfHour(timestamp) AS hour,
@@ -191,10 +192,41 @@ SELECT
     max(value) AS max_value,
     min(value) AS min_value
 FROM shop.meterdata
-WHERE timestamp >= '2021-01-01 00:00:00' 
+WHERE timestamp >= '2020-02-05 00:00:00' 
   AND timestamp < '2021-12-31 23:59:59'
 GROUP BY hour, user_id, meter_id
-ORDER BY hour DESC
-LIMIT 1000;
+ORDER BY hour DESC;
 
 takes in clickhouse around 40 milliseconds
+
+The result you're seeing from your SELECT query is providing key performance metrics about the query execution. Let's break it down:
+
+100.0%, Read 344.06 thousand rows, 6.81 MB (16.97 million/sec, 335.83 MB/sec)
+1. 100.0%:
+
+This indicates that the query has completed successfully and fully. In this context, it means the query scanned 100% of the requested data, without any interruptions or early terminations.
+
+2. Read 344.06 thousand rows:
+
+This shows the number of rows read by the query. In this case, the query scanned 344,060 rows from the dataset.
+The number of rows could be influenced by your query's filtering (WHERE clause) and whether any indexes or optimizations are in place.
+
+3. 6.81 MB:
+
+This shows the amount of data read by the query in megabytes. It indicates that 6.81 MB of data was read during the query execution. This would include the raw data from the storage (disk or memory) that was scanned in order to fulfill the query.
+
+4. (16.97 million/sec, 335.83 MB/sec):
+
+These are the throughput metrics for the read operation:
+
+16.97 million/sec: This is the row throughput—the number of rows read per second. This means that ClickHouse was reading approximately 16.97 million rows per second. It gives an idea of how fast the database is scanning rows in this particular query.
+
+335.83 MB/sec: This is the data throughput—the amount of data ClickHouse read per second. In this case, ClickHouse is reading 335.83 MB per second, which gives a sense of how fast the disk (or cache) is being scanned and how much data is being processed.
+
+### What Does It All Mean?
+
+The performance metrics give you an idea of the efficiency and speed of your query:
+
+Row Throughput (16.97 million/sec): The database is able to process around 17 million rows per second, which is extremely fast. ClickHouse is optimized for handling large volumes of data in columnar storage, so this throughput is expected for read-heavy operations.
+
+Data Throughput (335.83 MB/sec): The system can scan 335 MB of data per second, which indicates how quickly it can move through the disk or memory during the query execution. If you're working with a large dataset or a complex query, the speed at which data is read is a critical factor in overall performance.
