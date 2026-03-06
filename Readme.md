@@ -7,6 +7,8 @@ This project demonstrates the use of ClickHouse, a high-performance columnar dat
 docker-compose.yml: Configuration file for running ClickHouse and the data ingestion client in Docker containers.
 
 clickhouse/: Directory containing necessary files to build the ClickHouse Docker image (initialization scripts, configuration files, etc.).
+postgres/: Directory containing necessary files to build the ClickHouse Docker image (initialization scripts, configuration files, etc.).
+timescaledb/: Directory containing necessary files to build the ClickHouse Docker image (initialization scripts, configuration files, etc.).
 
 src/: Directory for sample data files (e.g., timeseries_data.csv) and scripts for data generation.
 
@@ -16,33 +18,85 @@ timeseries_data.csv: Example data file containing time-series readings and senso
 
 generate_products.py: Python script to generate synthetic time-series data for testing and development.
 
-How it Works
+## How it Works
+
 1. Docker Compose Setup
 
 This project uses Docker Compose to orchestrate the deployment of two containers:
 
+### Clickhouse
 ClickHouse: A high-performance columnar database optimized for handling large-scale time-series data.
-
 ClickHouse Data Ingest Client: A container that waits for ClickHouse to start and then inserts data into the database.
 
 The docker-compose.yml file defines both services, with ClickHouse configured to run on the default ports (9000, 8123). The data ingestion service waits for ClickHouse to initialize before proceeding to insert sample data.
 
+### TimescaleDB
+
+TimescaleDB is a time-series database built on top of PostgreSQL. It is optimized for handling large volumes of time-stamped data. TimescaleDB is used here to store and query time-series data, such as metrics, sensor data, logs, and other time-based information.
+
+Docker Service: timescaledb
+
+Image: timescale/timescaledb:latest-pg15
+
+Container Name: timescaledb
+
+Ports: Exposes port 5432 (the standard PostgreSQL port) inside the container and maps it to 15432 on the host machine. You can connect to TimescaleDB through this port.
+
+Environment Variables:
+
+POSTGRES_PASSWORD: The password for the default PostgreSQL user (timescale).
+
+POSTGRES_USER: The default PostgreSQL user (timescale).
+
+POSTGRES_DB: The default database (timescale).
+
+Volumes:
+
+./src/timeseries_data.csv:/csv-data/timeseries_data.csv: Mounts the CSV file with time-series data to the container, making it available for import into the database.
+
+./timescaledb/init_db.sh:/docker-entrypoint-initdb.d/init_db.sh: A shell script that runs when the TimescaleDB container starts, which creates the necessary table and loads data from the mounted CSV file.
+
+Network: Connected to the clickhouse-net network to allow communication between services.
+
+CloudBeaver
+
+CloudBeaver is a web-based SQL client for managing databases. It provides a graphical interface for interacting with the TimescaleDB service, including running SQL queries, viewing tables, and visualizing data.
+
+Docker Service: cloudbeaver
+
+Image: dbeaver/cloudbeaver:latest
+
+Container Name: cloudbeaver
+
+Ports: Exposes port 8978 on the host machine. Access CloudBeaver UI at http://localhost:8978.
+
+Environment Variables:
+
+CB_SERVER_HTTP_PORT: Specifies the HTTP port (default is 8978).
+
+Depends On: Depends on the timescaledb service to ensure that the database is available before CloudBeaver starts.
+
+Network: Connected to the same network (clickhouse-net) as the TimescaleDB service, enabling communication between the two containers.
+
+Purpose:
+
+CloudBeaver or PgAdmin provides a user-friendly interface to manage and interact with TimescaleDB.
+
+Go to localhost: http://localhost:8978, create an admin and then create a connection to your database, where:
+Host: timescaledb(service name), Username: timescale, password: timescale 
+Users can connect to TimescaleDB, run queries, and visualize data directly in the browser.
+
 2. Data Generation & Ingestion
 
 Data is generated via the generate_products.py script or other scripts in the src/ directory, simulating real-world time-series data.
-
 The generated data is stored in CSV files and inserted into the ClickHouse table through the ClickHouse Data Ingest Client.
-
 The timeseries_data.csv file contains columns like timestamp, user_id, meter_id, and value that are inserted into the database.
 
 3. Time-Series Data Analysis
 
 Once the data is ingested into ClickHouse, you can run various types of analysis, such as:
-
 Aggregating data by time intervals (e.g., hourly, daily).
-
 Performing sliding window calculations.
-
 Analyzing data based on user_id and meter_id.
 
 To open Clickhouse UI go to http://localhost:8123 and then to Clickhouse UI
@@ -66,8 +120,8 @@ SELECT
     max(value) AS max_value,
     min(value) AS min_value
 FROM shop.meterdata
-WHERE timestamp >= '2021-01-01 00:00:00' 
-  AND timestamp < '2021-12-31 23:59:59'
+WHERE timestamp >= '2020-01-01 00:00:00' 
+  AND timestamp < '2022-12-31 23:59:59'
 GROUP BY hour, user_id, meter_id
 ORDER BY hour DESC
 LIMIT 1000;
@@ -100,8 +154,8 @@ SELECT
     timestamp,
     avg(value) OVER (PARTITION BY user_id ORDER BY timestamp ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS moving_avg
 FROM shop.meterdata
-WHERE timestamp >= '2021-01-01 00:00:00'
-  AND timestamp < '2021-12-31 23:59:59'
+WHERE timestamp >= '2020-01-01 00:00:00'
+  AND timestamp < '2022-12-31 23:59:59'
 ORDER BY timestamp DESC
 LIMIT 1000;
 Why it's slow in PostgreSQL:
@@ -113,9 +167,16 @@ Time-based sliding window aggregations can involve expensive operations if there
 Why it's fast in ClickHouse:
 
 ClickHouse is optimized for time-series queries and can perform sliding window aggregations using its parallelized processing.
-
 Time-based data is often partitioned by date or time in ClickHouse, making it very efficient at running these types of queries.
 
+### Postgres Results:
+For a dataset of 2M rows, the query in Scenario 1 above, takes 2.253 seconds as shown in image query_postgres_2.png
+
+### Timescaledb Results:
+For a dataset of 2M rows, the query in Scenario 1 above, takes 2.265 seconds as shown in image query_timescaledb_2.png
+
+### Clickhouse Results:
+For a dataset of 2M rows, the query in Scenario 1 above, takes 0.10 seconds as shown in image query_clickhouse_2.png
 
 ## Scenario 3: High Cardinality Joins
 

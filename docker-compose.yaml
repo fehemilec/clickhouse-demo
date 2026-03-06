@@ -22,7 +22,7 @@ services:
       - CLICKHOUSE_HOST=clickhouse
       - CLICKHOUSE_USER=fehemi
       - CLICKHOUSE_PASSWORD=fehemi
-      - CLICKHOUSE_DB=shop
+      - CLICKHOUSE_DB=energy
     depends_on:
       - clickhouse
     entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]  # Run the script with a small delay to ensure ClickHouse is ready
@@ -38,6 +38,11 @@ services:
     networks:
       clickhouse-net:
         ipv4_address: 172.40.25.60
+
+  
+##-------------------##
+##-----POSTGRES------##
+##-------------------##
 
   postgres:
     image: postgres:latest
@@ -88,6 +93,36 @@ services:
     networks:
       clickhouse-net:
         ipv4_address: 172.40.25.52
+
+##-----------------------##
+##-----TIMESCALEDB-------##
+##-----------------------##
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescaledb
+    environment:
+      - POSTGRES_PASSWORD=timescale
+      - POSTGRES_USER=timescale
+      - POSTGRES_DB=timescale
+    ports:
+      - "15432:5432"  # Expose the TimescaleDB port
+    volumes:
+      - ./src/timeseries_data.csv:/csv-data/timeseries_data.csv
+      - ./timescaledb/init_db.sh:/docker-entrypoint-initdb.d/init_db.sh
+    networks:
+      - clickhouse-net
+
+  # cloudbeaver:
+  #   image: dbeaver/cloudbeaver:latest
+  #   container_name: cloudbeaver
+  #   environment:
+  #     - CB_SERVER_HTTP_PORT=8978  # Port for accessing CloudBeaver UI
+  #   ports:
+  #     - "8978:8978"  # Expose CloudBeaver UI on port 8978
+  #   depends_on:
+  #     - timescaledb
+  #   networks:
+  #     - clickhouse-net
     
 networks:
   clickhouse-net:
