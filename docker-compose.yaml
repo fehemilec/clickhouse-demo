@@ -1,82 +1,81 @@
 services:
-  clickhouse:
-    build:
-      context: ./clickhouse
-    container_name: clickhouse
-    ports:
-      - "9000:9000"    # TCP port for ClickHouse native protocol
-      - "8123:8123"    # HTTP port for ClickHouse
-      - "9009:9009"
-    volumes:
-      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./src/timeseries_data.csv:/docker-entrypoint-initdb.d/timeseries_data.csv
-    networks:
-      clickhouse-net:
-        ipv4_address: 172.40.25.50
+  # clickhouse:
+  #   build:
+  #     context: ./clickhouse
+  #   container_name: clickhouse
+  #   ports:
+  #     - "9000:9000"    # TCP port for ClickHouse native protocol
+  #     - "8123:8123"    # HTTP port for ClickHouse
+  #     - "9009:9009"
+  #   volumes:
+  #     - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     clickhouse-net:
+  #       ipv4_address: 172.40.25.50
 
   
-  clickhouse_data_ingest:
-    image: yandex/clickhouse-client:latest
-    container_name: clickhouse_data_ingest
-    environment:
-      - CLICKHOUSE_HOST=clickhouse
-      - CLICKHOUSE_USER=fehemi
-      - CLICKHOUSE_PASSWORD=fehemi
-      - CLICKHOUSE_DB=energy
-    depends_on:
-      - clickhouse
-    entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]  # Run the script with a small delay to ensure ClickHouse is ready
-    volumes:
-      - ./src/timeseries_data.csv:/timeseries_data.csv
-      - ./clickhouse/data_init.sh:/data_init.sh
-    healthcheck:
-      test: ["CMD", "clickhouse-client", "--host=clickhouse", "--user=$CLICKHOUSE_USER", "--password=$CLICKHOUSE_PASSWORD", "--query=SELECT 1"]
-      interval: 10s
-      retries: 5
-      start_period: 5s
-      timeout: 5s
-    networks:
-      clickhouse-net:
-        ipv4_address: 172.40.25.60
+  # clickhouse_data_ingest:
+  #   image: yandex/clickhouse-client:latest
+  #   container_name: clickhouse_data_ingest
+  #   environment:
+  #     - CLICKHOUSE_HOST=clickhouse
+  #     - CLICKHOUSE_USER=fehemi
+  #     - CLICKHOUSE_PASSWORD=fehemi
+  #     - CLICKHOUSE_DB=shop
+  #   depends_on:
+  #     - clickhouse
+  #   entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]  # Run the script with a small delay to ensure ClickHouse is ready
+  #   volumes:
+  #     - ./src/timeseries_data.csv:/timeseries_data.csv
+  #     - ./clickhouse/data_init.sh:/data_init.sh
+  #   healthcheck:
+  #     test: ["CMD", "clickhouse-client", "--host=clickhouse", "--user=$CLICKHOUSE_USER", "--password=$CLICKHOUSE_PASSWORD", "--query=SELECT 1"]
+  #     interval: 10s
+  #     retries: 5
+  #     start_period: 5s
+  #     timeout: 5s
+  #   networks:
+  #     clickhouse-net:
+  #       ipv4_address: 172.40.25.60
 
   
 ##-------------------##
 ##-----POSTGRES------##
 ##-------------------##
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres
-    environment:
-      POSTGRES_USER: fehemi
-      POSTGRES_PASSWORD: fehemi
-      POSTGRES_DB: shop
-    volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    networks:
-      clickhouse-net:
-        ipv4_address: 172.40.25.51
+  # postgres:
+  #   image: postgres:latest
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: fehemi
+  #     POSTGRES_PASSWORD: fehemi
+  #     POSTGRES_DB: shop
+  #   volumes:
+  #     - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     clickhouse-net:
+  #       ipv4_address: 172.40.25.51
 
-  postgres_data_ingest:
-    image: postgres:latest
-    container_name: postgres_data_ingest
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_USER=fehemi
-      - POSTGRES_PASSWORD=fehemi
-      - PGPASSWORD=fehemi
-      - POSTGRES_DB=shop
-    depends_on:
-      - postgres
-    entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]
-    volumes:
-      - ./src/timeseries_data.csv:/timeseries_data.csv
-      - ./postgres/data_init.sh:/data_init.sh
-    networks:
-      clickhouse-net:
-        ipv4_address: 172.40.25.61
+  # postgres_data_ingest:
+  #   image: postgres:latest
+  #   container_name: postgres_data_ingest
+  #   environment:
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=fehemi
+  #     - POSTGRES_PASSWORD=fehemi
+  #     - PGPASSWORD=fehemi
+  #     - POSTGRES_DB=shop
+  #   depends_on:
+  #     - postgres
+  #   entrypoint: ["/bin/bash", "-c", "sleep 10 && ./data_init.sh"]
+  #   volumes:
+  #     - ./src/timeseries_data.csv:/timeseries_data.csv
+  #     - ./postgres/data_init.sh:/data_init.sh
+  #   networks:
+  #     clickhouse-net:
+  #       ipv4_address: 172.40.25.61
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -88,8 +87,8 @@ services:
       - PGADMIN_CONNECTIONS=postgres://fehemi:fehemi@postgres:5432/shop
     ports:
       - "5050:80"  # pgAdmin UI http://localhost:5050
-    depends_on:
-      - postgres
+    # depends_on:
+    #   - postgres
     networks:
       clickhouse-net:
         ipv4_address: 172.40.25.52

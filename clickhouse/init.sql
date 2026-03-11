@@ -1,11 +1,11 @@
 -- init.sql
-CREATE DATABASE IF NOT EXISTS energy;
+CREATE DATABASE IF NOT EXISTS shop;
 CREATE USER IF NOT EXISTS fehemi IDENTIFIED WITH plaintext_password BY 'fehemi';
-GRANT ALL ON energy.* TO fehemi;
+GRANT ALL ON shop.* TO fehemi;
 
 
--- Switch to the "energy" database
-USE energy;
+-- Switch to the "shop" database
+USE shop;
 
 -- Create a table called "meterdata"
 CREATE TABLE IF NOT EXISTS meterdata
@@ -17,4 +17,3 @@ CREATE TABLE IF NOT EXISTS meterdata
 )
 ENGINE = MergeTree()
 ORDER BY timestamp;
-

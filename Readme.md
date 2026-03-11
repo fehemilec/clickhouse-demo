@@ -123,8 +123,7 @@ FROM shop.meterdata
 WHERE timestamp >= '2020-01-01 00:00:00' 
   AND timestamp < '2022-12-31 23:59:59'
 GROUP BY hour, user_id, meter_id
-ORDER BY hour DESC
-LIMIT 1000;
+ORDER BY hour DESC;
 Why it's slow in PostgreSQL:
 
 PostgreSQL stores data row-by-row, so it has to scan through all rows to get the relevant data.
@@ -168,6 +167,16 @@ Why it's fast in ClickHouse:
 
 ClickHouse is optimized for time-series queries and can perform sliding window aggregations using its parallelized processing.
 Time-based data is often partitioned by date or time in ClickHouse, making it very efficient at running these types of queries.
+
+## Scenario 3: Query Timescaledb using index
+
+--EXPLAIN ANALYZE
+SELECT user_id, meter_id, value
+FROM meterdata
+WHERE user_id = '461'
+AND meter_id = '451'
+AND timestamp BETWEEN '2020-01-01' AND '2022-12-30';
+
 
 ### Postgres Results:
 For a dataset of 2M rows, the query in Scenario 1 above, takes 2.253 seconds as shown in image query_postgres_2.png
